@@ -1,10 +1,6 @@
-import t from 'prop-types';
-import React, {Component} from 'react';
+import React from 'react';
 import formatDate from 'date-fns/format';
 
-const APP_ID = '668cbecb-e3ee-455d-8a8c-e0fd18ca8016';
-
-const QUERY_ID = '05fedf2d-1f0c-45d5-9996-9afc99f88420';
 // Query:
 // query MeetupEvents {
 //   meetup {
@@ -13,7 +9,7 @@ const QUERY_ID = '05fedf2d-1f0c-45d5-9996-9afc99f88420';
 //         path: "/find/upcoming_events"
 //         query: [
 //           ["radius", "global"],
-//           ["text", "graphql"],
+//           ["text", "reasonml"],
 //           ["order", "time"]
 //         ]
 //       ) {
@@ -23,13 +19,13 @@ const QUERY_ID = '05fedf2d-1f0c-45d5-9996-9afc99f88420';
 //   }
 // }
 
-async function fetchQuery(docId) {
+async function fetchQuery(docId, appId) {
   const resp = await fetch(
-    'https://serve.onegraph.com/graphql?app_id=' + APP_ID,
+    'https://serve.onegraph.com/graphql?app_id=' + appId,
     {
       method: 'POST',
       headers: {'Content-Type': 'application/json', Accept: 'application/json'},
-      body: JSON.stringify({doc_id: '05fedf2d-1f0c-45d5-9996-9afc99f88420'}),
+      body: JSON.stringify({doc_id: docId}),
     },
   );
   const json = await resp.json();
@@ -55,17 +51,20 @@ function Link({link, children}) {
   );
 }
 
-export default function MeetupEvents() {
+export default function MeetupEvents({queryId, appId, filter}) {
   const [data, setData] = React.useState(null);
   React.useEffect(() => {
     if (!data) {
-      fetchQuery(QUERY_ID).then(res => setData(res));
+      fetchQuery(queryId, appId).then(res => setData(res));
     }
   }, [data, setData]);
   if (!data) {
     return null;
   }
-  const events = data.meetup.makeRestCall.get.jsonBody.events;
+
+  const events = data.meetup.makeRestCall.get.jsonBody.events.filter(
+    filter || (_ => true),
+  );
   const byDay = events.reduce((acc, event) => {
     const dayEvents = acc[event.local_date] || [];
     dayEvents.push(event);
